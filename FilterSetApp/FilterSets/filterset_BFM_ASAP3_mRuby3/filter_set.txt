@@ -1,0 +1,17 @@
+# OptimalFilterApp filter set
+type=schematic
+version=2
+name=filterset_BFM_ASAP3
+savedOn=19-Jun-2026 14:57:57
+srcVals=UHP-F-470_Prizmatix|UHP-F-545_Prizmatix
+cleanVals=Chroma_482-28|Chroma_561-10
+combinerVals=FF_511_Di01
+primary=BFM_ 488_568_Di
+fluorVals=GFP|mRuby3
+emVals=BFM_520_41|BFM_560_lp
+detVals=sCMOS (typical)|sCMOS (typical)
+ownerVals=mNeonGreen|GFP
+splitterVals=BFM_560_Di
+Rback=0.5
+blockOD=6
+opticsMode=Individual spectra
