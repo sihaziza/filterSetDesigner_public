@@ -82,10 +82,6 @@ classdef filterDesignerApp < matlab.apps.AppBase
         StoichMarkerDots               % scatter of marker/curve crossings
         StoichData      struct = struct()
         SchNoiseAxes
-        StoichTempPairAxes
-        StoichTempTernaryAxes
-        StoichTempHeatAxes
-        StoichTempStatus
         % Box 2 specimen:
         SchPrimaryDD
         SchFluorArea
@@ -265,7 +261,6 @@ classdef filterDesignerApp < matlab.apps.AppBase
 
             buildSchematicTab(app);
             buildPhysicsMetricsTab(app);
-            buildStoichTempTab(app);
             buildCompareTab(app);
             buildLibraryTab(app);
             buildWebTab(app);
@@ -638,42 +633,6 @@ classdef filterDesignerApp < matlab.apps.AppBase
             detPanel.Layout.Row = 1; detPanel.Layout.Column = 3;
             detg = uigridlayout(detPanel,[1 1]); detg.Padding=[4 4 4 4];
             app.SchDetectorBudgetTable = uitable(detg);
-        end
-
-        function buildStoichTempTab(app)
-            t = uitab(app.Tabs,'Title','Stoich Preview (temp)');
-            g = uigridlayout(t,[3 2]);
-            g.RowHeight = {42,'1x','1x'};
-            g.ColumnWidth = {'1x','1x'};
-            g.Padding = [10 10 10 10];
-            g.RowSpacing = 10; g.ColumnSpacing = 10;
-
-            app.StoichTempStatus = uilabel(g, 'WordWrap','on', 'FontSize',11, ...
-                'FontColor',[0.35 0.35 0.35], ...
-                'Text',['Temporary comparison of 3-fluor concentration-imbalance views. ' ...
-                'All plots use fixed total fluor concentration and report max channel contamination ' ...
-                '= non-owner fluor signal / owner signal. Balanced point is 1:1:1.']);
-            app.StoichTempStatus.Layout.Row = 1;
-            app.StoichTempStatus.Layout.Column = [1 2];
-
-            app.StoichTempPairAxes = uiaxes(g);
-            app.StoichTempPairAxes.Layout.Row = 2;
-            app.StoichTempPairAxes.Layout.Column = 1;
-            title(app.StoichTempPairAxes,'Pairwise slices');
-            xlabel(app.StoichTempPairAxes,'Pair ratio, third fluor held at 1x');
-            ylabel(app.StoichTempPairAxes,'Max contamination (%)');
-
-            app.StoichTempTernaryAxes = uiaxes(g);
-            app.StoichTempTernaryAxes.Layout.Row = 2;
-            app.StoichTempTernaryAxes.Layout.Column = 2;
-            title(app.StoichTempTernaryAxes,'Ternary composition map');
-
-            app.StoichTempHeatAxes = uiaxes(g);
-            app.StoichTempHeatAxes.Layout.Row = 3;
-            app.StoichTempHeatAxes.Layout.Column = [1 2];
-            title(app.StoichTempHeatAxes,'2D log-ratio heatmap');
-            xlabel(app.StoichTempHeatAxes,'Fluor 1 / Fluor 3');
-            ylabel(app.StoichTempHeatAxes,'Fluor 2 / Fluor 3');
         end
 
         function rebuildFluorRows(app)
@@ -1163,21 +1122,12 @@ classdef filterDesignerApp < matlab.apps.AppBase
                 strcmp(app.Tabs.SelectedTab.Title,'Metrics');
         end
 
-        function tf = isStoichTempVisible(app)
-            tf = ~isempty(app.Tabs) && isvalid(app.Tabs) && ...
-                ~isempty(app.Tabs.SelectedTab) && ...
-                strcmp(app.Tabs.SelectedTab.Title,'Stoich Preview (temp)');
-        end
-
         function onTabChanged(app)
             % Recompute the deferred Metrics stoichiometry/noise sweep the first
             % time the Metrics tab is shown after a schematic change.
             if app.Building; return; end
             if isMetricsVisible(app) && app.MetricsDirty
                 updateSchematicMetrics(app);
-            end
-            if isStoichTempVisible(app)
-                updateStoichTempPlots(app);
             end
         end
 
@@ -1477,9 +1427,6 @@ classdef filterDesignerApp < matlab.apps.AppBase
                     app.MetricsDirty = false;
                 else
                     app.MetricsDirty = true;
-                end
-                if isStoichTempVisible(app)
-                    updateStoichTempPlots(app);
                 end
             catch ME
                 app.SchMetricTable.Data = cell(0,7);
@@ -2106,239 +2053,6 @@ classdef filterDesignerApp < matlab.apps.AppBase
                     xl = cm + log10(max(eff, 1e-9));
                 end
             end
-        end
-
-        function updateStoichTempPlots(app)
-            if isempty(app.StoichTempPairAxes) || ~isvalid(app.StoichTempPairAxes)
-                return;
-            end
-            try
-                [fluors, lasers, channels, assign, Rback, blockOD] = schematicSystem(app);
-                if numel(fluors) < 3 || isempty(lasers) || isempty(channels)
-                    drawStoichTempUnavailable(app, 'Select at least three fluors, one source, and one detection channel.');
-                    return;
-                end
-                pSrc_mW = metricPowerPerSource(app);
-                phys = metricPhys(app, numel(lasers), pSrc_mW);
-                cfg = struct('lambda',app.Lambda,'fluors',fluors,'lasers',lasers, ...
-                    'channels',channels,'assign',assign,'detector',ones(numel(app.Lambda),1), ...
-                    'Rback',Rback,'blockOD',blockOD);
-                names = {fluors(1:3).name};
-                app.StoichTempStatus.Text = sprintf(['3-fluor mixing preview (%s / %s / %s), fixed total ' ...
-                    'concentration. Colour = worst-channel contamination (non-owner signal / owner signal): ' ...
-                    'GREEN = low (good), RED = high. Dashed line / 10%% contour = acceptable boundary; ' ...
-                    'white marker = balanced 1:1:1.'], names{1}, names{2}, names{3});
-                drawPairwiseStoichTemp(app, cfg, phys, names);
-                drawTernaryStoichTemp(app, cfg, phys, names);
-                drawHeatmapStoichTemp(app, cfg, phys, names);
-            catch ME
-                drawStoichTempUnavailable(app, ME.message);
-            end
-        end
-
-        function drawStoichTempUnavailable(app, msg)
-            axesList = [app.StoichTempPairAxes, app.StoichTempTernaryAxes, app.StoichTempHeatAxes];
-            titles = {'Pairwise slices unavailable','Ternary map unavailable','Heatmap unavailable'};
-            for ii = 1:numel(axesList)
-                ax = axesList(ii);
-                if isempty(ax) || ~isvalid(ax); continue; end
-                try; colorbar(ax,'off'); catch; end
-                cla(ax);
-                title(ax, titles{ii});
-                text(ax,0.5,0.5,msg,'Units','normalized','HorizontalAlignment','center', ...
-                    'Interpreter','none');
-            end
-            if ~isempty(app.StoichTempStatus) && isvalid(app.StoichTempStatus)
-                app.StoichTempStatus.Text = ['Stoichiometry preview unavailable: ' msg];
-            end
-        end
-
-        function drawPairwiseStoichTemp(app, cfg, phys, names)
-            ax = app.StoichTempPairAxes;
-            try; colorbar(ax,'off'); catch; end
-            cla(ax); hold(ax,'on');
-            ratios = logspace(-2,2,81);
-            % acceptable region (<10% contamination), shaded behind the curves
-            patch(ax, [1e-2 1e2 1e2 1e-2], [1e-2 1e-2 10 10], [0.25 0.6 0.32], ...
-                'FaceAlpha',0.10, 'EdgeColor','none', 'HandleVisibility','off');
-            pairs = [1 2 3; 1 3 2; 2 3 1];
-            cols = lines(3);
-            h = gobjects(1,3); leg = cell(1,3);
-            for pp = 1:3
-                a = pairs(pp,1); b = pairs(pp,2); held = pairs(pp,3);
-                y = zeros(size(ratios));
-                for rr = 1:numel(ratios)
-                    w = ones(1,3);
-                    w(a) = ratios(rr); w(b) = 1; w(held) = 1;
-                    y(rr) = max(stoichTempContaminationPct(app, cfg, phys, w/sum(w)), 0.01);
-                end
-                h(pp) = semilogx(ax, ratios, y, 'LineWidth',2, 'Color',cols(pp,:));
-                leg{pp} = sprintf('%s / %s  (hold %s)', names{a}, names{b}, names{held});
-            end
-            yline(ax, 10, '--', '10% acceptable', 'Color',[0.2 0.5 0.25], ...
-                'LineWidth',1.3, 'LabelHorizontalAlignment','left', 'FontWeight','bold');
-            xline(ax,1,'-','balanced','Color',[0.6 0.6 0.6], 'LabelOrientation','horizontal');
-            ax.XScale = 'log'; ax.YScale = 'log';
-            grid(ax,'on'); xlim(ax,[1e-2 1e2]);
-            xlabel(ax,'Pair concentration ratio (others held at 1x)');
-            ylabel(ax,'Max channel contamination (%)');
-            title(ax,'Tolerance to concentration imbalance');
-            legend(ax, h, leg, 'Location','northwest','Interpreter','none', 'FontSize',9);
-            hold(ax,'off');
-        end
-
-        function drawTernaryStoichTemp(app, cfg, phys, names)
-            ax = app.StoichTempTernaryAxes;
-            try; colorbar(ax,'off'); catch; end
-            cla(ax); hold(ax,'on');
-            step = 0.04;
-            xs = []; ys = []; cs = [];
-            for a = 0:step:1
-                for b = 0:step:(1-a+eps)
-                    c = max(0, 1-a-b);
-                    if a + b + c > 1 + 1e-9; continue; end
-                    score = stoichTempContaminationPct(app, cfg, phys, [a b c]);
-                    xs(end+1) = b + 0.5*c; %#ok<AGROW>
-                    ys(end+1) = (sqrt(3)/2)*c; %#ok<AGROW>
-                    cs(end+1) = stoichTempScoreLog(app, score); %#ok<AGROW>
-                end
-            end
-            xs = xs(:); ys = ys(:); cs = cs(:);
-            % smooth interpolated fill over the (convex) triangular domain
-            tri = delaunay(xs, ys);
-            patch(ax, 'Faces',tri, 'Vertices',[xs ys], 'FaceVertexCData',cs, ...
-                'FaceColor','interp', 'EdgeColor','none');
-            triX = [0 1 0.5 0]; triY = [0 0 sqrt(3)/2 0];
-            plot(ax, triX, triY, '-', 'Color',[0.9 0.9 0.9], 'LineWidth',1.4);
-            bx = 1/3 + 0.5/3; by = (sqrt(3)/2)/3;
-            plot(ax, bx, by, 'o', 'MarkerEdgeColor','k', 'MarkerFaceColor','w', 'MarkerSize',7, 'LineWidth',1);
-            text(ax, bx, by+0.05, '1:1:1', 'Color',[1 1 1], 'FontWeight','bold', ...
-                'HorizontalAlignment','center');
-            text(ax, -0.04, -0.05, names{1}, 'Interpreter','none', 'FontWeight','bold', ...
-                'HorizontalAlignment','right');
-            text(ax, 1.04, -0.05, names{2}, 'Interpreter','none', 'FontWeight','bold', ...
-                'HorizontalAlignment','left');
-            text(ax, 0.5, sqrt(3)/2+0.06, names{3}, 'Interpreter','none', 'FontWeight','bold', ...
-                'HorizontalAlignment','center');
-            axis(ax,'equal'); axis(ax,'off');
-            ylim(ax,[-0.12 sqrt(3)/2+0.12]); xlim(ax,[-0.12 1.12]);
-            title(ax,'Worst-channel contamination across all 3-fluor mixes');
-            setupStoichTempColorbar(app, ax);
-            hold(ax,'off');
-        end
-
-        function drawHeatmapStoichTemp(app, cfg, phys, names)
-            ax = app.StoichTempHeatAxes;
-            try; colorbar(ax,'off'); catch; end
-            cla(ax); hold(ax,'on');
-            gridLog = linspace(-2,2,41);
-            Z = zeros(numel(gridLog), numel(gridLog));
-            for yy = 1:numel(gridLog)
-                r23 = 10.^gridLog(yy);
-                for xx = 1:numel(gridLog)
-                    r13 = 10.^gridLog(xx);
-                    w = [r13, r23, 1];
-                    Z(yy,xx) = stoichTempScoreLog(app, ...
-                        stoichTempContaminationPct(app, cfg, phys, w/sum(w)));
-                end
-            end
-            contourf(ax, gridLog, gridLog, Z, linspace(-2,2,24), 'LineColor','none');
-            ax.YDir = 'normal';
-            % highlight the 10% "acceptable" contamination boundary
-            [C10,h10] = contour(ax, gridLog, gridLog, Z, [1 1], '--', ...
-                'LineColor',[1 1 1], 'LineWidth',1.6);
-            if ~isempty(C10); clabel(C10, h10, 'Color',[1 1 1], 'FontSize',9, 'FontWeight','bold'); end
-            xline(ax,0,'-','Color',[0.85 0.85 0.85], 'LineWidth',1);
-            yline(ax,0,'-','Color',[0.85 0.85 0.85], 'LineWidth',1);
-            plot(ax,0,0,'o','MarkerEdgeColor','k','MarkerFaceColor','w','MarkerSize',7,'LineWidth',1);
-            ax.XTick = -2:1:2; ax.YTick = -2:1:2;
-            ax.XTickLabel = {'0.01','0.1','1','10','100'};
-            ax.YTickLabel = {'0.01','0.1','1','10','100'};
-            xlabel(ax, sprintf('%s / %s concentration ratio', names{1}, names{3}), 'Interpreter','none');
-            ylabel(ax, sprintf('%s / %s concentration ratio', names{2}, names{3}), 'Interpreter','none');
-            title(ax,'Contamination vs concentration ratios (dashed = 10% boundary)');
-            setupStoichTempColorbar(app, ax);
-            hold(ax,'off');
-        end
-
-        function pct = stoichTempContaminationPct(app, cfg, phys, shares3)
-            concs = zeros(1,numel(cfg.fluors));
-            totalConc = max(1, app.SchMetricFields.conc.Value) * 1e-9;
-            concs(1:3) = totalConc * shares3(:)';
-            N = stoichTempSignalByFluor(app, cfg, phys, concs);
-            vals = nan(1,numel(cfg.channels));
-            for k = 1:numel(cfg.channels)
-                owner = cfg.assign(k);
-                if owner < 1 || owner > size(N,1); continue; end
-                sig = N(owner,k);
-                vals(k) = 100 * max(sum(N(:,k)) - sig, 0) / max(sig, eps);
-            end
-            pct = max(vals(isfinite(vals)));
-            if isempty(pct) || ~isfinite(pct); pct = 0; end
-        end
-
-        function N = stoichTempSignalByFluor(app, cfg, phys, concs)
-            lambda = cfg.lambda(:);
-            hc = 1.98644586e-25;
-            photonE = hc ./ (lambda*1e-9);
-            nF = numel(cfg.fluors); nC = numel(cfg.channels); nS = numel(cfg.lasers);
-            PhiTot = zeros(numel(lambda),1);
-            for j = 1:nS
-                src = cfg.lasers(j);
-                if isfield(phys,'powers_mW') && numel(phys.powers_mW) >= j
-                    src.power = phys.powers_mW(j)*1e-3;
-                end
-                PhiTot = PhiTot + FilterEngine.sourceExcitation(src, lambda) ./ photonE;
-            end
-            th = asin(min(phys.NA/phys.n, 1));
-            colEff = (1 - cos(th))/2;
-            fp = metricPhotophysics(app, cfg.fluors, concs);
-            Tk = zeros(numel(lambda),nC);
-            for k = 1:nC
-                Tk(:,k) = FilterEngine.pathTransmission(cfg.channels(k), lambda);
-            end
-            N = zeros(nF,nC);
-            for i = 1:nF
-                absFrac = 1 - 10.^(-(fp(i).ec * cfg.fluors(i).ex(:)) * fp(i).conc_M * phys.pathLength_cm);
-                absorbRate = trapz(lambda, PhiTot .* absFrac);
-                emN = cfg.fluors(i).em(:);
-                area = trapz(lambda, emN);
-                if area > 0; emN = emN / area; end
-                for k = 1:nC
-                    detFrac = trapz(lambda, emN .* Tk(:,k));
-                    N(i,k) = absorbRate * fp(i).qy * colEff * detFrac * phys.tInt_s;
-                end
-            end
-        end
-
-        function z = stoichTempScoreLog(~, scorePct)
-            z = log10(max(scorePct, 0.01));
-            z = min(2, max(-2, z));
-        end
-
-        function setupStoichTempColorbar(app, ax)
-            colormap(ax, contamColormap(app));
-            caxis(ax, [-2 2]);
-            cb = colorbar(ax);
-            cb.Label.String = 'Max channel contamination';
-            cb.Ticks = -2:1:2;
-            cb.TickLabels = {'0.01%','0.1%','1%','10%','100%+'};
-        end
-
-        function cm = contamColormap(~)
-            % Intuitive contamination scale: GREEN = low (good) -> yellow ->
-            % RED = high (bad). Anchored so the green->red transition sits around
-            % the few-percent "borderline" region.
-            anchors = [0.18 0.58 0.30;   % green   (clean)
-                       0.55 0.74 0.26;   % green-yellow
-                       0.97 0.85 0.22;   % yellow  (~few %)
-                       0.91 0.46 0.16;   % orange
-                       0.80 0.16 0.16];  % red     (heavy)
-            x = linspace(0,1,size(anchors,1)); xi = linspace(0,1,256)';
-            cm = [interp1(x,anchors(:,1),xi,'pchip'), ...
-                  interp1(x,anchors(:,2),xi,'pchip'), ...
-                  interp1(x,anchors(:,3),xi,'pchip')];
-            cm = min(max(cm,0),1);
         end
 
         function cols = stoichColors(app, cfg, nC, nS)
