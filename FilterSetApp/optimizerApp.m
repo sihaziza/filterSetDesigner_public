@@ -1,7 +1,7 @@
 classdef optimizerApp < matlab.apps.AppBase
-%OPTIMIZERAPP  Archived standalone optimizer layout from OptimalFilterApp.
+%OPTIMIZERAPP  Archived standalone optimizer layout from filterDesignerApp.
 %   This keeps the optimizer UI available as a separate app shell while the
-%   main OptimalFilterApp no longer shows an Optimizer tab.
+%   main filterDesignerApp no longer shows an Optimizer tab.
 
     properties (Access = public)
         Fig
@@ -115,7 +115,7 @@ classdef optimizerApp < matlab.apps.AppBase
             app.OptAFcheck.Layout.Column = [3 4];
 
             app.StatusLbl = uilabel(root, ...
-                'Text','Optimizer layout archived here. Compute wiring remains in OptimalFilterApp history/code if you want to restore it later.', ...
+                'Text','Optimizer layout archived here. Compute wiring remains in filterDesignerApp history/code if you want to restore it later.', ...
                 'FontColor',[0.3 0.3 0.3]);
         end
     end

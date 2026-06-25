@@ -2,7 +2,7 @@
 # Source: Thorlabs APD4x0A/APD4x0A2 typical responsivity plot.
 # Curve used: APD410A2 & APD440A2 (M = 50), red trace.
 # Original plot units: responsivity A/W, approximate peak 24 A/W near 590-610 nm.
-# Values below are normalized relative response for use by OptimalFilterApp.
+# Values below are normalized relative response for use by filterDesignerApp.
 Wavelength_nm	Relative_Response
 350	0.59808612
 351	0.59491628

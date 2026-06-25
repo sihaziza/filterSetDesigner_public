@@ -17,13 +17,17 @@ parts over the internet instead of hunting for data sheets.
 
 ## App screenshots
 
+**Design workflow**
+
+![Designer app design workflow](documents/1_DesignerApp_designWorkflow.png)
+
 **Individual spectra view**
 
-![Designer app individual spectra view](DesignerApp_individualSpectra.png)
+![Designer app individual spectra view](documents/2_DesignerApp_individualSpectra.png)
 
 **Combined spectra view**
 
-![Designer app combined spectra view](DesignerApp_combinedSpectra.png)
+![Designer app combined spectra view](documents/3_DesignerApp_combinedSpectra.png)
 
 ---
 
@@ -51,7 +55,7 @@ the guessing with spectra and numbers.
    runApp
    ```
 
-4. The app opens on the **Schematic** tab with a working 1-colour example.
+4. The app opens on the **Design** tab with a working 1-colour example.
    Use the drop-downs to choose your fluorophores, light sources, dichroics,
    filters and detector — the plots update live.
 
@@ -99,16 +103,20 @@ breakdown of noise into shot noise, read noise, dark current,
 autofluorescence and laser back-reflection. Includes brain-tissue and
 optical-fibre autofluorescence models for *in vivo* / fibre-photometry users.
 
-### 3. Spectra Library + Web — *get real parts*
+### 3. Compare — *compare filter sets side by side*
+Send any design into the Compare tab to keep a side-by-side table of the optics
+you chose and the physics metrics they produce. This is useful when you are
+trying several dichroic/filter combinations and want a clean record of the
+tradeoffs.
+
+### 4. Library & Web — *get real parts*
 Search **FPbase** for fluorescent proteins and dyes, and the
 **Semrock/Chroma/Omega/Zeiss** catalogues for filters and dichroics, then
 download them straight into your library. A duplicate-finder keeps the library
 tidy.
 
-### 4. Optimizer — *let the app pick filters*
-Give it a list of candidate emission filters (or auto-pull bandpass filters near
-your dye’s emission peak) and it ranks the combinations by a signal-vs-crosstalk
-(or signal-to-noise) score.
+The old optimizer layout is archived as `filterSetApp/optimizerApp.m` in case
+you want to bring that workflow back later.
 
 ---
 
@@ -136,17 +144,17 @@ source or fluorophore by hand, drop a file into the matching folder:
 
 | Folder | What goes in it |
 |--------|-----------------|
-| `Spectra/Proteins` | fluorophore excitation/emission spectra |
-| `Spectra/Filters` | bandpass / long-pass / short-pass emission & excitation filters |
-| `Spectra/Dichroics` | dichroic / beamsplitter transmission curves |
-| `Spectra/Illumations` | lamp / LED light-source spectra |
-| `Spectra/Detectors` | camera / PMT / APD quantum-efficiency curves |
+| `spectra/Proteins` | fluorophore excitation/emission spectra |
+| `spectra/Filters` | bandpass / long-pass / short-pass emission & excitation filters |
+| `spectra/Dichroics` | dichroic / beamsplitter transmission curves |
+| `spectra/Illumations` | lamp / LED light-source spectra |
+| `spectra/Detectors` | camera / PMT / APD quantum-efficiency curves |
 
 **File format:** wavelength in the first column, then the spectrum value(s).
 Two columns = a single transmission/QE curve; three columns
 (`wavelength, excitation, emission`) = a fluorophore. Spectra are resampled onto
 a common axis automatically, so 0.2 nm, 0.5 nm or 1 nm steps all work. Click
-**Reload local** in the Spectra Library tab after adding files.
+**Reload local** in the Library & Web tab after adding files.
 
 ---
 

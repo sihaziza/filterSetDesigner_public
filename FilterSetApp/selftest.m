@@ -2,19 +2,22 @@ function selftest
 % Headless sanity check of loadSpectrum + FilterEngine against real data.
 here = fileparts(mfilename('fullpath'));
 root = fileparts(here);
-spectraRoot = fullfile(root, 'Spectra');
+spectraRoot = fullfile(root, 'spectra');
+if ~isfolder(spectraRoot)
+    spectraRoot = fullfile(root, 'Spectra');
+end
 addpath(here);
 lambda = (350:1:850)';
 
 fprintf('--- loadSpectrum on varied formats ---\n');
 tests = {
-    'Proteins/GFP.txt'
+    'Proteins/EGFP.txt'
     'Proteins/mNeonGreen.txt'
     'Proteins/iRFP670.txt'
     'Filters/FF01-520_44.txt'
     'Dichroics/Di01-R488_561.TXT'
     'Filters/T_600_lpxr.txt'
-    'Illumations/UHP-F-470_Prizmatix.txt'};
+    'Illumations/UHP-T-475-SR_Prizmatix.txt'};
 for i = 1:numel(tests)
     S = loadSpectrum(fullfile(spectraRoot, tests{i}), lambda);
     fprintf('%-28s kind=%-11s max(ex)=%.2f max(em)=%.2f\n', ...
@@ -22,10 +25,10 @@ for i = 1:numel(tests)
 end
 
 fprintf('\n--- FilterEngine end-to-end (uSMAART-like) ---\n');
-gfp = loadSpectrum(fullfile(spectraRoot,'Proteins/GFP.txt'),lambda);
+gfp = loadSpectrum(fullfile(spectraRoot,'Proteins/EGFP.txt'),lambda);
 ofp = loadSpectrum(fullfile(spectraRoot,'Proteins/cyOFP.txt'),lambda);
 rub = loadSpectrum(fullfile(spectraRoot,'Proteins/mRuby3.txt'),lambda);
-fluors = struct('name',{'GFP','cyOFP','mRuby3'}, ...
+fluors = struct('name',{'EGFP','cyOFP','mRuby3'}, ...
     'ex',{gfp.ex,ofp.ex,rub.ex},'em',{gfp.em,ofp.em,rub.em}, ...
     'brightness',{33.5,30.4,42.9});
 lasers = struct('name',{'488','561'},'wl',{488,561},'power',{1,1});

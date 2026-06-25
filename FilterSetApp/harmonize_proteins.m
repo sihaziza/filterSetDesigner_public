@@ -1,9 +1,13 @@
 function harmonize_proteins
-%HARMONIZE_PROTEINS Convert Spectra/Proteins/ into one file per protein, 3 columns.
+%HARMONIZE_PROTEINS Convert spectra/Proteins/ into one file per protein, 3 columns.
 
 appDir = fileparts(mfilename('fullpath'));
 root = fileparts(appDir);
-protDir = fullfile(root, 'Spectra', 'Proteins');
+specRoot = fullfile(root, 'spectra');
+if ~isfolder(specRoot)
+    specRoot = fullfile(root, 'Spectra');
+end
+protDir = fullfile(specRoot, 'Proteins');
 lambda = (350:850)';
 backupDir = fullfile(root, ['Proteins_raw_backup_' datestr(now,'yyyymmdd_HHMMSS')]);
 mkdir(backupDir);

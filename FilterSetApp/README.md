@@ -2,7 +2,7 @@
 
 Two MATLAB GUIs for fluorescence imaging system design:
 
-1. **`OptimalFilterApp`** — choose optimal optical filter sets (signal,
+1. **`filterDesignerApp`** — choose optimal optical filter sets (signal,
    crosstalk, laser back-reflection, optimizer) with a web connection to
    [FPbase](https://www.fpbase.org).
 2. **`FilterSetSNRApp`** — take the chosen filter set and compute absolute
@@ -13,33 +13,33 @@ Two MATLAB GUIs for fluorescence imaging system design:
 ## Run
 
 ```matlab
-cd 'Optimal Filter sets'
+cd 'filterSetDesigner_private'
 runApp                  % 1) design the filter set
 % ... in Results, click "Save config → SNR app"
-addpath('FilterSetApp')
+addpath('filterSetApp')
 FilterSetSNRApp         % 2) load that config and compute SNR
 ```
 
-The app auto-loads spectra from the project `Spectra` folder:
-`Spectra/Proteins`, `Spectra/Filters`, `Spectra/Dichroics`,
-`Spectra/Illumations`, and `Spectra/Detectors`. Filter-set manifests live in
-`FilterSetApp/FilterSets`. To point at a different project root:
+The app auto-loads spectra from the project `spectra` folder:
+`spectra/Proteins`, `spectra/Filters`, `spectra/Dichroics`,
+`spectra/Illumations`, and `spectra/Detectors`. Filter-set manifests live in
+`filterSetApp/filterSets`. To point at a different project root:
 
 ```matlab
-OptimalFilterApp('C:\path\to\project_root')
+filterDesignerApp('C:\path\to\project_root')
 ```
 
 ## Tabs
 
 ### Tab layout
 - **Build Fluorescence Imaging Filter Set** — library tree, the main spectral plot, and the **primary dichroic / detector / back-reflection** controls + **Load/Save filter set**.
-- **Spectra Library + Web** — FPbase web search/download + the duplicate finder.
+- **Library & Web** — FPbase web search/download + the duplicate finder.
 - **System Builder** — fluorophores, excitation sources, detection channels, Compute.
 - **Results**, **Optimizer** — as below.
 
 ### Spectral viewing & cleanup
 - **Superposition viewer** (Build tab "Main spectral plot"): select tree entries and **Plot selected** / **Add selected** / **Remove selected** to build an overlay (fluorophores as ex-dashed / em-solid), **Clear** to reset — SearchLight-style. **Y axis** toggles **%T ↔ OD**.
-- **Duplicate finder** (Spectra Library + Web tab, "Find / remove duplicate spectra (xcorr)"): computes a **zero-lag normalised cross-correlation matrix** across same-kind spectra, shows it as a heatmap with the duplicate groups, and removes extras (keeps one per group, preferring non-`BFMConfig`). Also fixes a double-load bug where case-insensitive `*.txt`/`*.TXT` globbing loaded every file twice.
+- **Duplicate finder** (Library & Web tab, "Find & Remove Duplicate Spectra"): computes a **zero-lag normalised cross-correlation matrix** across same-kind spectra, shows it as a heatmap with the duplicate groups, and lets you choose exactly one spectrum to keep per duplicate group. Also fixes a double-load bug where case-insensitive `*.txt`/`*.TXT` globbing loaded every file twice.
 - **Results spectral plot**: **Plot** dropdown switches **Component superposition / Channel overlay / Raw vs filtered**; **Y** toggles **%T ↔ OD**; **X min/max** fields + a **scroll** slider pan/zoom the wavelength axis.
 
 1. **Library + Web** — browse local spectra; type a fluorophore name and
@@ -122,7 +122,7 @@ concentration, read noise, NA, or autofluorescence strength) for every channel,
 and marks the shot-noise = read-noise crossover for the worst channel — useful
 for finding where you become read-noise- vs background-limited.
 
-The filter-set **Optimizer** (in `OptimalFilterApp`) can rank candidate sets by
+The filter-set **Optimizer** (in `filterDesignerApp`) can rank candidate sets by
 either the optical figure of merit or the **electron-domain SNR** (Score-by
 menu) — the latter calls this same `snrModel`, so the optimizer optimises the
 real SNR including shot/read/dark/autofluorescence at a chosen operating point.
@@ -138,7 +138,7 @@ correctly show read noise mattering while bright regimes are shot-limited.
 ## Scripting / batch use
 
 ```matlab
-app = OptimalFilterApp;
+app = filterDesignerApp;
 r   = app.compute;      % r.S, r.CT, r.eff, r.score, r.fluors, r.channels
 ```
 
@@ -146,7 +146,7 @@ r   = app.compute;      % r.S, r.CT, r.eff, r.score, r.fluors, r.channels
 
 | File | Role |
 |------|------|
-| `OptimalFilterApp.m` | filter-set design GUI (programmatic App Designer class) |
+| `filterDesignerApp.m` | filter-set design GUI (programmatic App Designer class) |
 | `FilterSetSNRApp.m` | SNR calculator GUI (loads a saved config) |
 | `snrModel.m` | absolute electron-domain signal/noise/SNR model |
 | `autofluorPreset.m` | tissue/fibre/flavin/lipofuscin autofluorescence presets |

@@ -1,4 +1,4 @@
-# OptimalFilterApp filter set
+# filterDesignerApp filter set
 type=schematic
 version=2
 name=filterset_uSMAART_ASAP3

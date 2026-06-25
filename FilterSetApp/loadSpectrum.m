@@ -30,25 +30,52 @@ function S = loadSpectrum(filename, lambda)
     lines = regexp(raw, '\r\n|\n|\r', 'split');
     lines = lines(~cellfun(@(s) all(isspace(s)) || isempty(s), lines));
 
-    % --- choose the delimiter that actually parses the DATA, not the header ---
-    % Detecting the delimiter from the first few lines is fooled by prose
-    % headers (e.g. Semrock files whose preamble contains commas), so instead
-    % parse with each candidate delimiter and keep whichever yields the most
-    % numeric rows. A data row is one whose first cell is a finite number.
-    delims = {'\t', ',', ';', '\s+'};
-    data = []; bestRows = 0;
-    for d = 1:numel(delims)
-        D = []; rows = 0;
-        for i = 1:numel(lines)
-            toks = regexp(strtrim(lines{i}), delims{d}, 'split');
-            vals = str2double(toks);
+    % --- locate the data block: first line whose first token is a number ---
+    % The delimiter is detected from the DATA lines only (not the prose header,
+    % whose commas otherwise fool the detector), then the whole block is parsed
+    % in one fast textscan call (str2double per token was ~100x slower on the
+    % large theoretical-spectrum files of tens of thousands of rows).
+    isData = ~cellfun('isempty', regexp(lines, '^\s*[+-]?(\d|\.\d)', 'once'));
+    firstData = find(isData, 1);
+    if isempty(firstData)
+        error('loadSpectrum:noData', 'No numeric data parsed from %s', filename);
+    end
+    dlines = lines(firstData:end);
+
+    samp = strjoin(dlines(1:min(40,numel(dlines))), newline);
+    counts = [numel(strfind(samp, sprintf('\t'))), ...
+              numel(strfind(samp, ',')), numel(strfind(samp, ';'))];
+    [mx, di] = max(counts);
+    delimRe = {'\t', ',', ';'};
+    if mx == 0
+        delimChar = {' ','\t'}; multi = true; splitRe = '\s+';
+    else
+        chars = {sprintf('\t'), ',', ';'};
+        delimChar = chars{di}; multi = false; splitRe = delimRe{di};
+    end
+    ncol = numel(regexp(strtrim(dlines{1}), splitRe, 'split'));
+
+    data = [];
+    try
+        C = textscan(strjoin(dlines, newline), repmat('%f',1,ncol), ...
+            'CollectOutput',true, 'Delimiter',delimChar, ...
+            'MultipleDelimsAsOne',multi, 'EndOfLine','\n');
+        data = C{1};
+    catch
+        data = [];
+    end
+    if isempty(data) || size(data,1) < 0.5*numel(dlines)
+        % robust fallback for ragged files: per-line numeric parse
+        data = [];
+        for i = 1:numel(dlines)
+            vals = str2double(regexp(strtrim(dlines{i}), splitRe, 'split'));
             if numel(vals) >= 2 && isfinite(vals(1))
-                rows = rows + 1;
-                D(rows, 1:numel(vals)) = vals; %#ok<AGROW>
+                data(end+1, 1:numel(vals)) = vals; %#ok<AGROW>
             end
         end
-        if rows > bestRows; bestRows = rows; data = D; end
     end
+    % keep only rows with a finite wavelength (drops any trailing footer)
+    if ~isempty(data); data = data(isfinite(data(:,1)), :); end
     if isempty(data)
         error('loadSpectrum:noData', 'No numeric data parsed from %s', filename);
     end

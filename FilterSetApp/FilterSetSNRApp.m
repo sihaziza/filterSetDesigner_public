@@ -4,7 +4,7 @@ classdef FilterSetSNRApp < matlab.apps.AppBase
 %   photon shot noise, detector read noise, dark current, and tissue / fibre
 %   autofluorescence.
 %
-%   Companion to OptimalFilterApp: in that app design your system and click
+%   Companion to filterDesignerApp: in that app design your system and click
 %   "Save config → SNR app", then here click "Load config" (or launch with a
 %   config struct):
 %       >> FilterSetSNRApp                 % then Load config (.mat)
