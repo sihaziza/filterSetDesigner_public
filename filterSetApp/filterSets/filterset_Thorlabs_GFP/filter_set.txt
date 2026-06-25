@@ -1,0 +1,17 @@
+# filterDesignerApp filter set
+type=schematic
+version=2
+name=filterset_Thorlabs_GFP
+savedOn=23-Jun-2026 16:30:51
+srcVals=UHP-T-475-SR_Prizmatix
+cleanVals=Semrock_FF02-482_18
+combinerVals=
+primary=Semrock_FF495-Di03
+fluorVals=mNeonGreen
+emVals=FF02-520_28
+detVals=Kinetix_teledyne_photometrics
+ownerVals=mNeonGreen
+splitterVals=
+Rback=0.5
+blockOD=6
+opticsMode=Individual spectra

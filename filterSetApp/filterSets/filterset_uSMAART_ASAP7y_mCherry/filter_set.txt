@@ -1,0 +1,17 @@
+# filterDesignerApp filter set
+type=schematic
+version=2
+name=filterset_uSMAART_ASAP7y_mCherry
+savedOn=23-Jun-2026 16:33:19
+srcVals=M505L5_Thorlabs|M565L3_Thorlabs
+cleanVals=FF02-510_10|FF01-578_21
+combinerVals=Di02-R532
+primary=FF459_526_596-Di01
+fluorVals=TagYFP|mCherry
+emVals=FF02-543_22|FF01-593_LP
+detVals=APD440A2_thorlabs|APD440A2_thorlabs
+ownerVals=mNeonGreen|GFP
+splitterVals=FF574-Di01
+Rback=0.5
+blockOD=6
+opticsMode=Individual spectra
